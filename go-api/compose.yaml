@@ -1,0 +1,67 @@
+services:
+  go:
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      jaeger:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - DB_HOST=db
+    env_file:
+      - .env
+    pid: "host"
+    ports:
+      - "8080:8080"
+    volumes:
+      - /proc:/host/proc
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=debug
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    restart: unless-stopped
+
+  otel-go:
+    depends_on:
+      - go
+    image: otel/autoinstrumentation-go
+    privileged: true
+    pid: "host"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_GO_AUTO_TARGET_EXE=/bin/main
+      - OTEL_SERVICE_NAME=go-api
+      - OTEL_PROPAGATORS=tracecontext,baggage
+    volumes:
+      - /proc:/host/proc
+
+volumes:
+  pgdata:
