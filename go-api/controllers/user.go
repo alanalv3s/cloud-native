@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/alanalv3s/cloud-native/go-api/database"
 	"github.com/alanalv3s/cloud-native/go-api/models"
+	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,14 +37,16 @@ func GetUsers(c *gin.Context) {
 
 // GetUserByID returns a user by ID
 func GetUserByID(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+
+	userID, err := uuid.Parse(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, id).Error; err != nil {
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -53,14 +55,16 @@ func GetUserByID(c *gin.Context) {
 
 // UpdateUser updates a user by ID
 func UpdateUser(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+
+	userID, err := uuid.Parse(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, id).Error; err != nil {
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -79,13 +83,15 @@ func UpdateUser(c *gin.Context) {
 
 // DeleteUser deletes a user by ID
 func DeleteUser(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+
+	userID, err := uuid.Parse(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	if err := database.DB.Delete(&models.User{}, id).Error; err != nil {
+	if err := database.DB.Delete(&models.User{}, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
