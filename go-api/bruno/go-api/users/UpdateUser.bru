@@ -1,0 +1,31 @@
+meta {
+  name: UpdateUser
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{url}}/users/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 2cc8bb2b-f71d-40a1-8362-a28706de3dba
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/10.0.0
+}
+
+script:pre-request {
+  const { faker } = require('@faker-js/faker');
+   
+  const randomName = faker.name.fullName();
+  const randomEmail = faker.internet.email();
+   
+  req.setBody({
+    name: randomName
+  });
+}

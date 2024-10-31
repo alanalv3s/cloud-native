@@ -1,0 +1,27 @@
+meta {
+  name: CreateUser
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{url}}/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+script:pre-request {
+  const { faker } = require('@faker-js/faker');
+   
+  const randomName = faker.name.fullName();
+  const randomEmail = faker.internet.email();
+   
+  req.setBody({
+    name: randomName,
+    email: randomEmail
+  });
+}
