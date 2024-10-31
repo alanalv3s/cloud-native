@@ -1,0 +1,163 @@
+# values.yaml
+replicaCount: 2
+
+image:
+  repository: alanalv3s/go-api
+  pullPolicy: Always
+  tag: "1.0.0"
+
+nameOverride: go-api
+fullnameOverride: go-api
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  #name: "{{ .Values.nameOverride }}-role"
+
+envFrom: #load all env-vars from shared Values/env-vars.conf file
+  enabled: true
+
+env:
+  - name: DB_NAME
+    valueFrom:
+      secretKeyRef:
+        name: goapi-postgres-app
+        key: dbname
+  - name: DB_HOST
+    valueFrom:
+      secretKeyRef:
+        name: goapi-postgres-app
+        key: host
+  - name: DB_USER
+    valueFrom:
+      secretKeyRef:
+        name: goapi-postgres-app
+        key: username
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: goapi-postgres-app
+        key: password
+  - name: DB_PORT
+    valueFrom:
+      secretKeyRef:
+        name: goapi-postgres-app
+        key: port
+
+podLabels:
+  app: "go-api"
+
+podAnnotations:
+  config.linkerd.io/proxy-cpu-request: 50m
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  annotations: {}
+  ingressClassName: nginx
+  hosts:
+    - host: go-api.localhost
+      paths:
+        - /
+
+resources:
+  limits:
+    cpu: "50m"
+    memory: "64Mi"
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  failureThreshold: 3
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  successThreshold: 1
+  timeoutSeconds: 5
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  failureThreshold: 3
+  initialDelaySeconds: 20
+  # Allow sufficient amount of time (90 seconds = periodSeconds * failureThreshold)
+  # for the lightship registered shutdown handlers to run to completion.
+  periodSeconds: 30
+  successThreshold: 1
+  timeoutSeconds: 5
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 10
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 5
+
+podDisruptionBudget:
+  maxUnavailable: 50%
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+volumeMounts: []
+
+volumes: []
+# topologySpreadConstraints:
+#   - maxSkew: 1
+#     topologyKey: topology.kubernetes.io/zone
+#     whenUnsatisfiable: ScheduleAnyway
+#     labelSelector:
+#       matchLabels:
+#         default-chart.kubernetes.io/name: "{{ .Values.nameOverride }}"

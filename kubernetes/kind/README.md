@@ -9,7 +9,7 @@ go install sigs.k8s.io/cloud-provider-kind@latest
 
 kubectl label node kind-control-plane node.kubernetes.io/exclude-from-external-load-balancers-
 
-bin/cloud-provider-kind
+sudo cloud-provider-kind
 
 kubectl apply -f loadbalancer.yaml
 
@@ -20,4 +20,13 @@ for \_ in {1..10}; do curl ${LB_IP}; done
 
 ## NGINX Ingress
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl apply -f ingress-nginx.yaml
+
+# Metrics Server
+
+helm upgrade --install metrics-server metrics-server/metrics-server -f metrics-server-values.yaml
+
+# Cloud Native PG
+
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm upgrade --install cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg

@@ -12,6 +12,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main
 FROM scratch
 
 COPY --from=build /app/main /bin/main
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["/bin/main"]
